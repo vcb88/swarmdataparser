@@ -1,0 +1,8 @@
+
+# Ignore the generated SQLite database
+foursquare_data.db
+
+# Ignore raw data files
+*.csv
+*.json
+pix/
