@@ -199,13 +199,12 @@ def import_venues_data():
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     
-    total_venues_imported = 0
+    total_venues_processed = 0
 
-    # From checkins
+    # Process checkins for venue data
     checkin_files = [f for f in os.listdir('.') if f.startswith('checkins') and f.endswith('.json')]
-    print(f"DEBUG: Found checkin files: {checkin_files}")
+    print(f"DEBUG: Processing checkin files for venues: {checkin_files}")
     for filename in checkin_files:
-        print(f"DEBUG: Processing checkins file for venues: {filename}")
         with open(filename, 'r', encoding='utf-8') as f:
             data = json.load(f)
             for item in data.get('items', []):
@@ -213,30 +212,43 @@ def import_venues_data():
                 venue_id = venue.get('id')
                 venue_name = venue.get('name')
                 location = venue.get('location', {})
-                venue_address = location.get('address')
-                venue_lat = location.get('lat')
-                venue_lng = location.get('lng')
+
+                
+                venue_address_from_location = location.get('address')
+                venue_formatted_address_list = location.get('formattedAddress', [])
+                
+                # Prioritize 'address' field, but if not available, use 'formattedAddress'
+                if venue_address_from_location:
+                    venue_address = venue_address_from_location
+                elif venue_formatted_address_list:
+                    venue_address = ", ".join(venue_formatted_address_list)
+                else:
+                    venue_address = None
+                
+                venue_lat = item.get('lat') # Corrected extraction
+                venue_lng = item.get('lng') # Corrected extraction
                 
                 if venue_id:
-                    print(f"DEBUG: Found venue_id: {venue_id}, name: {venue_name}, address: {venue_address}, lat: {venue_lat}, lng: {venue_lng}")
-                    try:
-                        cursor.execute('''
-                            INSERT OR IGNORE INTO venues (id, name, address, lat, lng)
-                            VALUES (?, ?, ?, ?, ?)
-                        ''', (venue_id, venue_name, venue_address, venue_lat, venue_lng))
-                        if cursor.rowcount > 0:
-                            total_venues_imported += 1
-                            print(f"DEBUG: Inserted venue {venue_id}. Total imported: {total_venues_imported}")
-                        else:
-                            print(f"DEBUG: Skipped existing venue {venue_id}.")
-                    except sqlite3.Error as e:
-                        print(f"Error importing venue {venue_id} from checkins: {e}")
 
-    # From unconfirmed_visits
+
+                    cursor.execute('''
+                        UPDATE venues SET 
+                            name = COALESCE(?, name),
+                            address = COALESCE(address, ?),
+                            lat = COALESCE(lat, ?),
+                            lng = COALESCE(lng, ?)
+                        WHERE id = ?
+                    ''', (venue_name, venue_address, venue_lat, venue_lng, venue_id))
+                    
+
+    
+
+
+    # Process unconfirmed_visits for venue data
     try:
         with open('unconfirmed_visits.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
-            print(f"DEBUG: Processing unconfirmed_visits.json for venues.")
+            print("DEBUG: Processing unconfirmed_visits.json for venues.")
             for item in data.get('items', []):
                 venue_id = item.get('venueId')
                 venue = item.get('venue', {})
@@ -245,99 +257,39 @@ def import_venues_data():
                 lat = item.get('lat')
                 lng = item.get('lng')
 
-                if venue_id:
-                    print(f"DEBUG: Found venue_id (unconfirmed): {venue_id}, name: {venue_name}, lat: {lat}, lng: {lng}, url: {venue_url}")
-                    try:
-                        cursor.execute('''
-                            INSERT OR IGNORE INTO venues (id, name, lat, lng, url)
-                            VALUES (?, ?, ?, ?, ?)
-                        ''', (venue_id, venue_name, lat, lng, venue_url))
-                        if cursor.rowcount > 0:
-                            total_venues_imported += 1
-                            print(f"DEBUG: Inserted venue (unconfirmed) {venue_id}. Total imported: {total_venues_imported}")
-                        else: # Update existing entry if new info is available
-                            cursor.execute('''
-                                UPDATE venues SET name = COALESCE(?, name), lat = COALESCE(?, lat), lng = COALESCE(?, lng), url = COALESCE(?, url)
-                                WHERE id = ? AND (name IS NULL OR lat IS NULL OR lng IS NULL OR url IS NULL)
-                            ''', (venue_name, lat, lng, venue_url, venue_id))
-                            if cursor.rowcount > 0:
-                                print(f"DEBUG: Updated venue (unconfirmed) {venue_id}. Total imported: {total_venues_imported}")
-                            else:
-                                print(f"DEBUG: No update needed for venue (unconfirmed) {venue_id}.")
-                    except sqlite3.Error as e:
-                        print(f"Error importing venue {venue_id} from unconfirmed_visits: {e}")
+
     except FileNotFoundError:
         print("unconfirmed_visits.json not found. Skipping.")
     except Exception as e:
         print(f"Error processing unconfirmed_visits.json for venues: {e}")
 
-    # From tips
+    # Process tips for venue data
     try:
         with open('tips.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
-            print(f"DEBUG: Processing tips.json for venues.")
+            print("DEBUG: Processing tips.json for venues.")
             for item in data.get('items', []):
                 venue = item.get('venue', {})
                 venue_id = venue.get('id')
                 venue_name = venue.get('name')
 
-                if venue_id:
-                    print(f"DEBUG: Found venue_id (tips): {venue_id}, name: {venue_name}")
-                    try:
-                        cursor.execute('''
-                            INSERT OR IGNORE INTO venues (id, name)
-                            VALUES (?, ?)
-                        ''', (venue_id, venue_name))
-                        if cursor.rowcount > 0:
-                            total_venues_imported += 1
-                            print(f"DEBUG: Inserted venue (tips) {venue_id}. Total imported: {total_venues_imported}")
-                        else: # Update existing entry if new info is available
-                            cursor.execute('''
-                                UPDATE venues SET name = COALESCE(?, name)
-                                WHERE id = ? AND name IS NULL
-                            ''', (venue_name, venue_id))
-                            if cursor.rowcount > 0:
-                                print(f"DEBUG: Updated venue (tips) {venue_id}. Total imported: {total_venues_imported}")
-                            else:
-                                print(f"DEBUG: No update needed for venue (tips) {venue_id}.")
-                    except sqlite3.Error as e:
-                        print(f"Error importing venue {venue_id} from tips: {e}")
+
     except FileNotFoundError:
         print("tips.json not found. Skipping.")
     except Exception as e:
         print(f"Error processing tips.json for venues: {e}")
     
-    # From venueRatings
+    # Process venueRatings for venue data
     try:
         with open('venueRatings.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
-            print(f"DEBUG: Processing venueRatings.json for venues.")
+            print("DEBUG: Processing venueRatings.json for venues.")
             for item in data.get('venueLikes', []):
                 venue_id = item.get('id')
                 venue_name = item.get('name')
                 venue_url = item.get('url')
 
-                if venue_id:
-                    print(f"DEBUG: Found venue_id (ratings): {venue_id}, name: {venue_name}, url: {venue_url}")
-                    try:
-                        cursor.execute('''
-                            INSERT OR IGNORE INTO venues (id, name, url)
-                            VALUES (?, ?, ?)
-                        ''', (venue_id, venue_name, venue_url))
-                        if cursor.rowcount > 0:
-                            total_venues_imported += 1
-                            print(f"DEBUG: Inserted venue (ratings) {venue_id}. Total imported: {total_venues_imported}")
-                        else: # Update existing entry if new info is available
-                            cursor.execute('''
-                                UPDATE venues SET name = COALESCE(?, name), url = COALESCE(?, url)
-                                WHERE id = ? AND (name IS NULL OR url IS NULL)
-                            ''', (venue_name, venue_url, venue_id))
-                            if cursor.rowcount > 0:
-                                print(f"DEBUG: Updated venue (ratings) {venue_id}. Total imported: {total_venues_imported}")
-                            else:
-                                print(f"DEBUG: No update needed for venue (ratings) {venue_id}.")
-                    except sqlite3.Error as e:
-                        print(f"Error importing venue {venue_id} from venueRatings: {e}")
+
     except FileNotFoundError:
         print("venueRatings.json not found. Skipping.")
     except Exception as e:
@@ -345,7 +297,7 @@ def import_venues_data():
 
     conn.commit()
     conn.close()
-    print(f"Finished importing venues data. Total unique venues imported/updated: {total_venues_imported}")
+    print(f"Finished importing venues data. Total unique venues inserted/updated: {total_venues_processed}")
 
 
 def import_checkins_data():
@@ -1618,48 +1570,19 @@ def import_shares_data():
 
 
         conn.commit()
-
-
         print(f"Finished importing shares data. Total shares imported: {total_shares_imported}")
-
-
     except FileNotFoundError:
-
-
         print("shares.json not found. Skipping shares data import.")
-
-
     except Exception as e:
-
-
         print(f"Error processing shares.json: {e}")
-
-
     finally:
-
-
         conn.close()
-
-
-
-
-
-
 
 
 def main():
 
 
-
-
-
-
-
-
     setup_database()
-
-
-
 
 
 
@@ -1671,13 +1594,7 @@ def main():
 
 
 
-
-
-
     import_checkins_data()
-
-
-
 
 
 
@@ -1689,13 +1606,7 @@ def main():
 
 
 
-
-
-
     import_users_data()
-
-
-
 
 
 
@@ -1707,13 +1618,7 @@ def main():
 
 
 
-
-
-
     import_unconfirmed_visits_data()
-
-
-
 
 
 
@@ -1725,13 +1630,7 @@ def main():
 
 
 
-
-
-
     import_comments_data()
-
-
-
 
 
 
@@ -1743,13 +1642,7 @@ def main():
 
 
 
-
-
-
     import_expertise_data()
-
-
-
 
 
 
@@ -1761,13 +1654,7 @@ def main():
 
 
 
-
-
-
     import_shares_data()
-
-
-
 
 
 
@@ -1775,11 +1662,5 @@ def main():
 
     print("Data import process completed.")
 
-
-
-
-
 if __name__ == '__main__':
-
-
     main()

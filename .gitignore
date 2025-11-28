@@ -1,4 +1,3 @@
-
 # Ignore the generated SQLite database
 foursquare_data.db
 
@@ -6,3 +5,5 @@ foursquare_data.db
 *.csv
 *.json
 pix/
+readme.html
+.DS_Store
