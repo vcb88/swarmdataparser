@@ -1,7 +1,12 @@
 # Stage 1: Build the Frontend
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
-COPY frontend/package*.json ./
+# Debug: List context to see if files are available (this runs in the container, so it only sees what was copied)
+# But we can't see the context *before* copying.
+# Let's try to copy explicit file. If it fails here, it's missing from context.
+COPY frontend/package.json ./
+# Debug: Check if file exists after copy
+RUN ls -la
 RUN npm install
 COPY frontend/ ./
 RUN npm run build
