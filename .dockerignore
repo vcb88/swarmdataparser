@@ -1,6 +1,37 @@
+# Explicitly ignore known Swarm data files
+checkins*.json
+visits.json
+users.json
+tips.json
+comments.json
+photos.json
+venueRatings.json
+expertise.json
+plans.json
+shares.json
+unconfirmed_visits.json
+friends.json
+
+# Ignore generic data dumps but allow config
+*.csv
+*.dump
+foursquare_data.db
+pix/
+readme.html
+
+# System / IDE
 .git
 .gitignore
-node_modules
-frontend/node_modules
+.DS_Store
+.vscode
+.idea
+__pycache__
+*.pyc
+.venv
+venv
+env
+
+# Build artifacts
 frontend/dist
+frontend/node_modules
 backend/__pycache__
