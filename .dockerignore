@@ -1,16 +1,25 @@
-# Ignore data
-foursquare_data.db
-*.csv
-*.json
-!package.json
-!package-lock.json
-!tsconfig.json
-!tsconfig.*.json
-!backend/*.json
-!frontend/*.json
-pix/
+# Explicitly ignore known Swarm data files (root level usually)
+checkins*.json
+visits.json
+users.json
+tips.json
+comments.json
+photos.json
+venueRatings.json
+expertise.json
+plans.json
+shares.json
+unconfirmed_visits.json
+friends.json
 
-# Ignore system/IDE
+# Ignore generic data dumps but allow config
+*.csv
+*.dump
+foursquare_data.db
+pix/
+readme.html
+
+# System / IDE
 .git
 .gitignore
 .DS_Store
@@ -22,7 +31,7 @@ __pycache__
 venv
 env
 
-# Ignore build artifacts
+# Build artifacts
 frontend/dist
 frontend/node_modules
 backend/__pycache__
