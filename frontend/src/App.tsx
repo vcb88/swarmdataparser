@@ -11,8 +11,6 @@ import {
   Globe
 } from 'lucide-react';
 import { 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -24,10 +22,10 @@ import {
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 
 interface Stats {
-  total_checkins: int;
-  unique_venues: int;
+  total_checkins: number;
+  unique_venues: number;
   top_city: string;
-  total_distance_km: float;
+  total_distance_km: number;
 }
 
 interface CheckinGeo {
