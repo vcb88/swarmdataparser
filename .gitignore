@@ -2,6 +2,11 @@
 foursquare_data.db
 *.csv
 *.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.*.json
+!*.config.json
 pix/
 readme.html
 .env

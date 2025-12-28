@@ -1,0 +1,28 @@
+# Ignore data
+foursquare_data.db
+*.csv
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.*.json
+!backend/*.json
+!frontend/*.json
+pix/
+
+# Ignore system/IDE
+.git
+.gitignore
+.DS_Store
+.vscode
+.idea
+__pycache__
+*.pyc
+.venv
+venv
+env
+
+# Ignore build artifacts
+frontend/dist
+frontend/node_modules
+backend/__pycache__
