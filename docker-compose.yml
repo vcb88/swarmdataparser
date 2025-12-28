@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  swarm-dashboard:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app # Mount root to keep the DB in the project folder
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
